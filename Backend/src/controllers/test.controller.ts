@@ -37,7 +37,7 @@ const createNewMCQTest = async (req: Request, res: Response) => {
       branch,
       year,
       dateOfTest,
-      isActive
+      isActive,
     } = req.body;
 
     if (
@@ -48,7 +48,7 @@ const createNewMCQTest = async (req: Request, res: Response) => {
       !subjectId ||
       !branch ||
       !year ||
-      !dateOfTest || 
+      !dateOfTest ||
       isActive == undefined
     ) {
       return response.error({
@@ -138,7 +138,7 @@ const createNewMCQTest = async (req: Request, res: Response) => {
       year,
       facultyId: facultyDetails._id,
       dateOfTest,
-      isActive
+      isActive,
     });
 
     if (!newTest) {
@@ -178,7 +178,7 @@ const createNewMCQTest = async (req: Request, res: Response) => {
 
 const getTestByYearAndBranch = async (req: Request, res: Response) => {
   try {
-    const { branch, year , testType} = req.query;
+    const { branch, year, testType } = req.query;
 
     if (!branch || !year || !testType) {
       return response.error({
@@ -227,7 +227,6 @@ const getTestByYearAndBranch = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 const getTestBySubjectId = async (req: Request, res: Response) => {
   try {
@@ -278,9 +277,6 @@ const getTestBySubjectId = async (req: Request, res: Response) => {
     });
   }
 };
-
-
-
 
 const evaluateTheTestAfterSubmission = async (req: Request, res: Response) => {
   try {
@@ -351,6 +347,7 @@ const evaluateTheTestAfterSubmission = async (req: Request, res: Response) => {
     // Check the student should not have already recorded the response with this testId
     const isAlreadyResponseRecorded = await testStudentEvaluationModel.findOne({
       testId: testDetails._id,
+      studentId : studentDetails._id
     });
 
     if (isAlreadyResponseRecorded) {
@@ -414,12 +411,11 @@ const evaluateTheTestAfterSubmission = async (req: Request, res: Response) => {
     studentDetails.MCQtest.push(testDetails._id as mongoose.Types.ObjectId);
     await studentDetails.save();
 
-
-
     return response.success({
       res,
       code: 201,
       data: {
+        success : true,
         newStudentTestEvaluation,
         message: 'New Test Evaluation is Made',
       },
@@ -437,258 +433,301 @@ const evaluateTheTestAfterSubmission = async (req: Request, res: Response) => {
   }
 };
 
+// API for getting all the isActive Test (Branch and Year) :-
+const getAllTheActiveMCQTest = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const userRole = req.user?.userRole;
+    const { branch, year } = req.query;
 
-// API for getting all the isActive Test (Branch and Year) :- 
-const getAllTheActiveTest = async (req: Request, res: Response) =>{
-   try {
-    
-     const userId = req.user?.userId;
-     const userRole = req.user?.userRole;
-     const {branch , year} = req.query;
-
-     if (!branch || !year) {
+    if (!branch || !year) {
       return response.error({
         res,
-        code : 400,
-        data :  null,
-        error : true,
-        message : "Branch and Year Both are required"
-      })
-   }
+        code: 400,
+        data: null,
+        error: true,
+        message: 'Branch and Year Both are required',
+      });
+    }
 
-     if (userRole != "Student") {
-      
-        return response.error ({
-           res,
-           code : 401,
-           data : null,
-           error : true,
-           message : "Only for student"
-        })
-
-     }
-
+    if (userRole != 'Student') {
+      return response.error({
+        res,
+        code: 401,
+        data: null,
+        error: true,
+        message: 'Only for student',
+      });
+    }
 
     //  Test must be :-
     // 1. isActive :- true
-    //  2. student haven't given test 
+    //  2. student haven't given test
     // 3. Greater that today :-
     const allActiveTest = await testModel.find({
-        branch,
-        year,
-        isActive : true,
-        dateOfTest : {
-           $gte : new Date().toISOString()
-        }
-    })
-
+      branch,
+      year,
+      isActive: true,
+      dateOfTest: {
+        $gte: new Date().toISOString(),
+      },
+      testType: 'MCQ',
+    }).populate("facultyId")
 
     // Now extract the test that Student Haven't given :-
 
     const studentDetails = await studentModel.findOne({
-       userId : userId
+      userId: userId,
     });
 
-   let allTests : mongoose.Document[] = [];
-       allActiveTest.map((testDetails : mongoose.Document , index) =>{
-         if (!studentDetails?.MCQtest.includes(testDetails?._id as mongoose.Types.ObjectId)) {
-          //  does not includes :-
-          allTests.push(testDetails);
-         }
-    })
-
-    
+    let allTests: mongoose.Document[] = [];
+    allActiveTest.map((testDetails: mongoose.Document, index) => {
+      if (
+        !studentDetails?.MCQtest.includes(
+          testDetails?._id as mongoose.Types.ObjectId
+        )
+      ) {
+        //  does not includes :-
+        allTests.push(testDetails);
+      }
+    });
 
     return res.json({
-       success : true,
-       allTests
-    })
+      success: true,
+      allTests,
+    });
+  } catch (error) {
+    return response.error({
+      res,
+      code: 500,
+      data: null,
+      error: true,
+      message: error instanceof Error ? error.message : 'Internal Server Error',
+    });
+  }
+};
 
-   }
-   catch (error) {
-      return response.error({
-         res,
-         code : 500,
-         data : null,
-         error : true,
-         message : error instanceof Error ? error.message : "Internal Server Error"
-      })
-   }
-}
+// API for getting all the completed test for Logged In student :-
+const getAllTheCompletedMCQTest = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const userRole = req.user?.userRole;
 
+    const { branch, year } = req.query;
 
-const getAllTheCompletedTest = async (req : Request , res : Response) =>{
-  
-    try {
-      
-      const userId = req.user?.userId;
-      const userRole = req.user?.userRole;
-
-      const {branch , year} = req.query;
-
-      if (!branch || !year) {
-         return response.error({
-           res,
-           code : 400,
-           data :  null,
-           error : true,
-           message : "Branch and Year Both are required"
-         })
-      }
-
-      if (userRole != "Student") {
-        return response.error({
-          res,
-          code : 401,
-          data : null,
-          error : true,
-          message : "Only Student Can Access This"
-       }) 
-      }
-
-      const studentDetails = await studentModel.findOne({
-         userId : userId,
-         branch,
-         year
-      }).populate("MCQtest")
-
-      if (!studentDetails) {
-        return response.error({
-          res,
-          code : 404,
-          data : null,
-          error : true,
-          message : "Student not found"
-       }) 
-      }
-
-      // Completed test are those tests which are already given by user :-
-
-      if (!studentDetails || !studentDetails.MCQtest) {
-         return response.error({
-           res,
-           code : 500,
-           data : null,
-           error : true,
-           message : "Test could not be found"
-         })
-      }
-
-
-      return response.success({
-         res,
-         code : 200,
-         data : {
-           success : true,
-           allMyCompletedTest : studentDetails.MCQtest
-         },
-         error : false,
-         message : "All Completed Test Lists"
-      })
-       
-
-    }
-    catch (error) {
+    if (!branch || !year) {
       return response.error({
         res,
-        code : 500,
-        data : null,
-        error : true,
-        message : error instanceof Error ? error.message : "Internal Server Error"
-     })
+        code: 400,
+        data: null,
+        error: true,
+        message: 'Branch and Year Both are required',
+      });
     }
 
-}
-
-const getAllUpComingTestList = async(req : Request , res : Response) =>{
-  
-    try {
-      
-        const userId = req.user?.userId;
-        const userRole = req.user?.userRole;
-        const {branch , year} = req.query;
-
-        if (userRole != "Student") {
-          return response.error({
-            res,
-            code : 401,
-            data : null,
-            error : true,
-            message : "Only Student Can Access This"
-         }) 
-        }
-
-        if (!branch || !year) {
-          return response.error({
-            res,
-            code : 400,
-            data :  null,
-            error : true,
-            message : "Branch and Year Both are required"
-          })
-       }
-
-        const studentDetails = await studentModel.findOne({
-          userId : userId,
-          branch,
-          year
-       })
- 
-       if (!studentDetails) {
-         return response.error({
-           res,
-           code : 404,
-           data : null,
-           error : true,
-           message : "Student not found"
-        }) 
-       }
-
-       const allTests = await testModel.find({
-         isActive : false,
-         dateOfTest : {
-          $gte : new Date().toISOString()
-         }
-       })
-
-
-       let allUpcomingTestList : mongoose.Document[] = [];
-       allTests.map((testDetails : mongoose.Document ) =>{
-         if (!studentDetails?.MCQtest.includes(testDetails?._id as mongoose.Types.ObjectId)) {
-          //  does not includes :-
-          allUpcomingTestList.push(testDetails);
-         }
-    })
-
-
-
-       return res.json({
-         success : true,
-         allUpcomingTestList
-       })
-
-
-
-
-    }
-    catch (error) {
+    if (userRole != 'Student') {
       return response.error({
         res,
-        code : 500,
-        data : null,
-        error : true,
-        message : error instanceof Error ? error.message : "Internal Server Error"
-     })
+        code: 401,
+        data: null,
+        error: true,
+        message: 'Only Student Can Access This',
+      });
     }
 
-}
- 
+    const studentDetails = await studentModel
+      .findOne({
+        userId: userId,
+        branch,
+        year,
+      })
+      .populate('MCQtest');
+
+    if (!studentDetails) {
+      return response.error({
+        res,
+        code: 404,
+        data: null,
+        error: true,
+        message: 'Student not found',
+      });
+    }
+
+    // Completed test are those tests which are already given by user :-
+
+    if (!studentDetails || !studentDetails.MCQtest) {
+      return response.error({
+        res,
+        code: 500,
+        data: null,
+        error: true,
+        message: 'Test could not be found',
+      });
+    }
+
+    let allTestLists = await Promise.all(
+      studentDetails.MCQtest.map(async (singleTestDetails) => {
+        return await testModel
+          .findById(singleTestDetails._id)
+          .populate('facultyId');
+      })
+    );
+
+    return response.success({
+      res,
+      code: 200,
+      data: {
+        success: true,
+        allMyCompletedTest: allTestLists,
+      },
+      error: false,
+      message: 'All Completed Test Lists',
+    });
+  } catch (error) {
+    return response.error({
+      res,
+      code: 500,
+      data: null,
+      error: true,
+      message: error instanceof Error ? error.message : 'Internal Server Error',
+    });
+  }
+};
+
+// API for getting all the upcoming test for logged In Student :-
+const getAllUpComingMCQTestList = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const userRole = req.user?.userRole;
+    const { branch, year } = req.query;
+
+    if (userRole != 'Student') {
+      return response.error({
+        res,
+        code: 401,
+        data: null,
+        error: true,
+        message: 'Only Student Can Access This',
+      });
+    }
+
+    if (!branch || !year) {
+      return response.error({
+        res,
+        code: 400,
+        data: null,
+        error: true,
+        message: 'Branch and Year Both are required',
+      });
+    }
+
+    const studentDetails = await studentModel.findOne({
+      userId: userId,
+      branch,
+      year,
+    });
+
+    if (!studentDetails) {
+      return response.error({
+        res,
+        code: 404,
+        data: null,
+        error: true,
+        message: 'Student not found',
+      });
+    }
+
+    const allTests = await testModel.find({
+      isActive: false,
+      dateOfTest: {
+        $gte: new Date().toISOString(),
+      },
+      testType: 'MCQ',
+    }).populate("facultyId");
+
+    let allUpcomingTestList: mongoose.Document[] = [];
+    allTests.map((testDetails: mongoose.Document) => {
+      if (
+        !studentDetails?.MCQtest.includes(
+          testDetails?._id as mongoose.Types.ObjectId
+        )
+      ) {
+        //  does not includes :-
+        allUpcomingTestList.push(testDetails);
+      }
+    });
+
+    return res.json({
+      success: true,
+      allUpcomingTestList,
+    });
+  } catch (error) {
+    return response.error({
+      res,
+      code: 500,
+      data: null,
+      error: true,
+      message: error instanceof Error ? error.message : 'Internal Server Error',
+    });
+  }
+};
+
+
+const getTestById = async(req : Request , res : Response ) =>{
+  
+  try {
+    const {testId} = req.params;
+
+    if (!testId) {
+        return response.error({
+           res,
+           message : "Please Provide the testId"
+        })
+    }
+
+
+    const testDetails = await testModel.findById(testId).populate("totalQuestionsMCQ");
+
+    if (!testDetails) {
+       return response.error({
+        res,
+        code: 404,
+        data: null,
+        error: true,
+        message:  'Test Details not found with provided Id' 
+       })
+    }
+
+
+    return response.success({
+       res,
+       code : 200,
+       data : {
+          success : true,
+          testDetails
+       },
+       error : true,
+       message : "Test Details by Id"
+    })
+  }
+  catch (error) {
+     return response.error({
+      res,
+      code: 500,
+      data: null,
+      error: true,
+      message: error instanceof Error ? error.message : 'Internal Server Error'
+     })
+  }
+
+} 
 export {
   createNewMCQTest,
   getTestByYearAndBranch,
   getTestBySubjectId,
   evaluateTheTestAfterSubmission,
-  getAllTheActiveTest,
-  getAllTheCompletedTest,
-  getAllUpComingTestList
+  getAllTheActiveMCQTest,
+  getAllTheCompletedMCQTest,
+  getAllUpComingMCQTestList,
+  getTestById
 };

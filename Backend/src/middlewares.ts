@@ -15,6 +15,7 @@ import { facultyRouter } from './routes/faculty.router';
 import { subjectRouter } from './routes/subject.router';
 import { adminRouter } from './routes/admin.router';
 import { testRouter } from './routes/test.router';
+import { testStudentEvaluationRouter } from './routes/studentTestEvaluation.router';
 
 export function registerMiddlewares(app: Application) {
   app
@@ -42,4 +43,5 @@ export function registerRoutes(app: Application) {
   app.use('/api/v1/subject', subjectRouter);
   app.use('/api/v1/admin', adminRouter);
   app.use('/api/v1/test', testRouter);
+  app.use('/api/v1/testStudentEvaluation' , testStudentEvaluationRouter)
 }

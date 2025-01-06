@@ -49,6 +49,7 @@ const updateFacultyProfile = async (req: Request, res: Response) => {
       data: {
         message: 'Faculty Profile Updated SuccessFully',
         updatedFacultyDetails,
+        success : true
       },
       error: false,
       message: 'Faculty Profile Updated',
@@ -73,6 +74,7 @@ const addMCQQuestion = async (req: Request, res: Response) => {
     const { quesDescription, options, correctAns, reason, subjectId } =
       req.body;
 
+      console.log(quesDescription , options , correctAns , reason , subjectId)
     if (userRole != 'Faculty') {
       return response.error({
         res,
@@ -174,6 +176,7 @@ const addMCQQuestion = async (req: Request, res: Response) => {
       message: `New MCQ Question created Successfully for subject ${subject.subjectName}(${subject.subjectCode})`,
       data: {
         newQuestion,
+        success : true
       },
     });
   } catch (error) {

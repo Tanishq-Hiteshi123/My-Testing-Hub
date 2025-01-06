@@ -87,7 +87,8 @@ const getAllSubjects = async (req : Request , res : Response) =>{
         code : 200,
         data : {
            message : "All Subject List" ,
-           allSubjectsList
+           allSubjectsList,
+           success : true
         },
         error : false,
         message : "All Subject List" ,
