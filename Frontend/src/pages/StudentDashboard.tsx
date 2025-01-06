@@ -7,14 +7,13 @@ import Profile from "@/myComponents/StudentDashBoardComponents/Profile";
 import Progress from "@/myComponents/StudentDashBoardComponents/Progress";
 import UpComingTest from "@/myComponents/StudentDashBoardComponents/UpComingTest";
 import WelcomeBanner from "@/myComponents/WelcomeBanner";
-import { fetchAllTestService } from "@/Services/studentService";
 import { getMyRoleBasedProfileService } from "@/Services/userServices";
 import { useContext, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 function StudentDashboard() {
   const { showCompleteProfile, setShowCompleteProfile } = useContext<UserContextType>(UserContext);
-  const { setUserInfo , userInfo } = useContext<UserContextType>(UserContext);
+  const { setUserInfo  } = useContext<UserContextType>(UserContext);
 
   const location : string = useLocation().pathname;
 
@@ -38,20 +37,7 @@ function StudentDashboard() {
     }
   };
 
-  const fetchAllTest = async() =>{
-    
-      try {
-
-        const data = await fetchAllTestService(userInfo?.branch , userInfo?.year);
-
-        console.log(data)
-        
-      }
-      catch (error) {
-          throw new Error(error instanceof Error ? error.message : "Error Occured while fetching the Tests")
-      }
-
-  }
+  
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("userInfo")!);
     if (userData?.gender == undefined) {
@@ -59,13 +45,7 @@ function StudentDashboard() {
     }
   });
 
-  
-  useEffect(() => {
-    // Hitting the API for fetching all the test on the basis of year and Branch :-
 
-    fetchAllTest()
-
-  }, []);
   
   return (
     <div className="h-screen w-full ">
@@ -78,7 +58,7 @@ function StudentDashboard() {
              <DashboardSideBar/>
 
              
-              <div className="bg-gray-200 h-screen w-[100%]">
+              <div className=" h-screen w-[100%]">
               
               {location === "/studentDashboard" && <WelcomeBanner />}
               {location === "/studentDashboard/profile" && <Profile />}

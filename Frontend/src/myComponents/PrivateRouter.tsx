@@ -8,7 +8,8 @@ function PrivateRouter() {
     const token = localStorage.getItem("testHubToken") || ""
     const userInfo = JSON.parse(localStorage.getItem("userInfo")!) || {}
     const location = useLocation();
-    if (!token) {
+    if (!token && location.pathname != "/") {
+         console.log("This is the login page redirection")
           return <Navigate to={"/"} />
     }
 
