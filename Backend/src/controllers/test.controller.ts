@@ -60,6 +60,7 @@ const createNewMCQTest = async (req: Request, res: Response) => {
           'Please Provide all the necessary detail(s) for creating the test',
       });
     }
+
     const subjectDetails = await subjectModel.findById(subjectId);
 
     if (!subjectDetails) {
@@ -129,10 +130,10 @@ const createNewMCQTest = async (req: Request, res: Response) => {
     const newTest = await testModel.create({
       testName,
       testDescription: testDescription || '',
-      noOfQuestions,
+      noOfQuestions: +noOfQuestions,
       totalQuestionsMCQ: testQuestions,
       testType,
-      totalTime,
+      totalTime: +totalTime,
       subjectId,
       branch,
       year,
@@ -159,7 +160,8 @@ const createNewMCQTest = async (req: Request, res: Response) => {
       res,
       code: 201,
       data: {
-        message: 'Test Created',
+        success: true,
+        message: 'Test Created SuccessFully',
         newTest,
       },
       error: true,
@@ -347,7 +349,7 @@ const evaluateTheTestAfterSubmission = async (req: Request, res: Response) => {
     // Check the student should not have already recorded the response with this testId
     const isAlreadyResponseRecorded = await testStudentEvaluationModel.findOne({
       testId: testDetails._id,
-      studentId : studentDetails._id
+      studentId: studentDetails._id,
     });
 
     if (isAlreadyResponseRecorded) {
@@ -415,7 +417,7 @@ const evaluateTheTestAfterSubmission = async (req: Request, res: Response) => {
       res,
       code: 201,
       data: {
-        success : true,
+        success: true,
         newStudentTestEvaluation,
         message: 'New Test Evaluation is Made',
       },
@@ -464,15 +466,17 @@ const getAllTheActiveMCQTest = async (req: Request, res: Response) => {
     // 1. isActive :- true
     //  2. student haven't given test
     // 3. Greater that today :-
-    const allActiveTest = await testModel.find({
-      branch,
-      year,
-      isActive: true,
-      dateOfTest: {
-        $gte: new Date().toISOString(),
-      },
-      testType: 'MCQ',
-    }).populate("facultyId")
+    const allActiveTest = await testModel
+      .find({
+        branch,
+        year,
+        isActive: true,
+        dateOfTest: {
+          $gte: new Date().toISOString(),
+        },
+        testType: 'MCQ',
+      })
+      .populate('facultyId');
 
     // Now extract the test that Student Haven't given :-
 
@@ -637,13 +641,15 @@ const getAllUpComingMCQTestList = async (req: Request, res: Response) => {
       });
     }
 
-    const allTests = await testModel.find({
-      isActive: false,
-      dateOfTest: {
-        $gte: new Date().toISOString(),
-      },
-      testType: 'MCQ',
-    }).populate("facultyId");
+    const allTests = await testModel
+      .find({
+        isActive: false,
+        dateOfTest: {
+          $gte: new Date().toISOString(),
+        },
+        testType: 'MCQ',
+      })
+      .populate('facultyId');
 
     let allUpcomingTestList: mongoose.Document[] = [];
     allTests.map((testDetails: mongoose.Document) => {
@@ -672,55 +678,51 @@ const getAllUpComingMCQTestList = async (req: Request, res: Response) => {
   }
 };
 
-
-const getTestById = async(req : Request , res : Response ) =>{
-  
+const getTestById = async (req: Request, res: Response) => {
   try {
-    const {testId} = req.params;
+    const { testId } = req.params;
 
     if (!testId) {
-        return response.error({
-           res,
-           message : "Please Provide the testId"
-        })
+      return response.error({
+        res,
+        message: 'Please Provide the testId',
+      });
     }
 
-
-    const testDetails = await testModel.findById(testId).populate("totalQuestionsMCQ");
+    const testDetails = await testModel
+      .findById(testId)
+      .populate('totalQuestionsMCQ');
 
     if (!testDetails) {
-       return response.error({
+      return response.error({
         res,
         code: 404,
         data: null,
         error: true,
-        message:  'Test Details not found with provided Id' 
-       })
+        message: 'Test Details not found with provided Id',
+      });
     }
 
-
     return response.success({
-       res,
-       code : 200,
-       data : {
-          success : true,
-          testDetails
-       },
-       error : true,
-       message : "Test Details by Id"
-    })
-  }
-  catch (error) {
-     return response.error({
+      res,
+      code: 200,
+      data: {
+        success: true,
+        testDetails,
+      },
+      error: true,
+      message: 'Test Details by Id',
+    });
+  } catch (error) {
+    return response.error({
       res,
       code: 500,
       data: null,
       error: true,
-      message: error instanceof Error ? error.message : 'Internal Server Error'
-     })
+      message: error instanceof Error ? error.message : 'Internal Server Error',
+    });
   }
-
-} 
+};
 export {
   createNewMCQTest,
   getTestByYearAndBranch,
@@ -729,5 +731,5 @@ export {
   getAllTheActiveMCQTest,
   getAllTheCompletedMCQTest,
   getAllUpComingMCQTestList,
-  getTestById
+  getTestById,
 };

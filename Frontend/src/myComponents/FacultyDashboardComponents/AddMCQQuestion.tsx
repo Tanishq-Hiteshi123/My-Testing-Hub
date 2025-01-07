@@ -100,7 +100,7 @@ function AddMCQQuestion() {
         />
       </div>
 
-      {/* Options */}
+      
       
       {
          Array(4).fill(null).map((_ , index) =>{
