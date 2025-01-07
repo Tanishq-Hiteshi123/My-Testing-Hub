@@ -12,7 +12,7 @@ import { useContext, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 function FacultyDashboard() {
-  const { userInfo, setUserInfo, showCompleteProfile, setShowCompleteProfile } =
+  const { setUserInfo, showCompleteProfile, setShowCompleteProfile } =
     useContext(UserContext);
 
   const locationPath = useLocation().pathname;
